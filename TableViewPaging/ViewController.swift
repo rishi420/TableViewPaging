@@ -13,7 +13,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var aTableView: UITableView!
     
     var privateList = [String]()
-    let totalItems = 100
+    //let totalItems = 100 // server does not provide totalItems
     var fromIndex = 0
     let batchSize = 20
     
@@ -34,16 +34,72 @@ class ViewController: UIViewController {
 
     func loadMoreItems() {
         
-        let endIndex = min(totalItems, fromIndex + batchSize)
+        //let endIndex = min(totalItems, fromIndex + batchSize)
         
-        for i in fromIndex ..< endIndex {
-            privateList.append(String(i))
+//        for i in fromIndex ..< endIndex {
+//            privateList.append(String(i))
+//        }
+        
+        //print("Loading items form \(fromIndex) to \(endIndex - 1)")
+        
+        //fromIndex = endIndex
+        //aTableView.reloadData()
+        
+        
+        loadItemsNow("privateList")
+    }
+    
+    func loadItemsNow(listType:String){
+        //myActivityIndicator.startAnimating()
+        
+        let listUrlString = "http://infavori.com/json2.php?batchSize=" + String(fromIndex + batchSize) + "&fromIndex=" + String(fromIndex) + "&listType=" + listType
+        let myUrl = NSURL(string: listUrlString);
+        let request = NSMutableURLRequest(URL:myUrl!);
+        request.HTTPMethod = "GET";
+        
+        let task = NSURLSession.sharedSession().dataTaskWithRequest(request) {
+            data, response, error in
+            
+            if error != nil {
+                print(error!.localizedDescription)
+                dispatch_async(dispatch_get_main_queue(),{
+                    //self.myActivityIndicator.stopAnimating()
+                })
+                
+                return
+            }
+            
+            
+            do {
+                
+                let json = try NSJSONSerialization.JSONObjectWithData(data!, options: .MutableContainers) as? NSArray
+                
+                if let parseJSON = json {
+                    //self.privateList = parseJSON as! [String]
+
+                    var items = self.privateList
+                    items.appendContentsOf(parseJSON as! [String])
+                    
+                    if self.fromIndex < items.count {
+                        
+                        self.privateList = items
+                        self.fromIndex = items.count
+                        
+                        dispatch_async(dispatch_get_main_queue(),{
+                            //self.myActivityIndicator.stopAnimating()
+                            //self.myTableView.reloadData()
+                            self.aTableView.reloadData()
+                        })
+                    }
+                }
+                
+            } catch {
+                print(error)
+                
+            }
         }
         
-        print("Loading items form \(fromIndex) to \(endIndex - 1)")
-        
-        fromIndex = endIndex
-        aTableView.reloadData()
+        task.resume()
     }
 }
 
@@ -59,9 +115,9 @@ extension ViewController: UITableViewDataSource {
         cell.textLabel?.text = privateList[indexPath.row]
         
         if indexPath.row == privateList.count - 1 { // last cell
-            if totalItems > privateList.count {
+            //if totalItems > privateList.count { //removing totalItems for always service call
                 loadMoreItems()
-            }
+            //}
         }
         
         return cell

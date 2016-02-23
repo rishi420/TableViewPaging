@@ -286,6 +286,7 @@
 				BC2E916E1C764501005CA91A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
